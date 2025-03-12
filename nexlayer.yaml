@@ -1,0 +1,98 @@
+application:
+  name: "Langfuse App"
+  pods:
+    - name: langfuse-worker
+      image: langfuse/langfuse-worker:2.95.1
+      servicePorts:
+        - 3030
+      vars:
+        DATABASE_URL: postgresql://postgres:postgres@postgres.pod:5432/postgres
+        SALT: mysalt
+        ENCRYPTION_KEY: "0000000000000000000000000000000000000000000000000000000000000000"
+        TELEMETRY_ENABLED: "true"
+        LANGFUSE_ENABLE_EXPERIMENTAL_FEATURES: "true"
+        CLICKHOUSE_MIGRATION_URL: clickhouse://clickhouse.pod:9000
+        CLICKHOUSE_URL: http://clickhouse.pod:8123
+        CLICKHOUSE_USER: clickhouse
+        CLICKHOUSE_PASSWORD: clickhouse
+        LANGFUSE_S3_EVENT_UPLOAD_BUCKET: langfuse
+        LANGFUSE_S3_MEDIA_UPLOAD_BUCKET: langfuse
+        LANGFUSE_S3_EVENT_UPLOAD_ENDPOINT: http://minio.pod:9000
+        REDIS_HOST: redis.pod
+        REDIS_PORT: "6379"
+        REDIS_AUTH: myredissecret
+
+    - name: langfuse-web
+      image: langfuse/langfuse:2.95.1
+      path: /
+      servicePorts:
+        - 3000
+      vars:
+        DATABASE_URL: postgresql://postgres:postgres@postgres.pod:5432/postgres
+        DIRECT_URL: postgresql://postgres:postgres@postgres.pod:5432/postgres
+        SALT: mysalt
+        ENCRYPTION_KEY: "0000000000000000000000000000000000000000000000000000000000000000"
+        TELEMETRY_ENABLED: "true"
+        NEXTAUTH_URL: <% URL %> 
+        NEXTAUTH_SECRET: mysecret
+        CLICKHOUSE_CLUSTER_ENABLED: "false"
+        CLICKHOUSE_MIGRATION_URL: clickhouse://clickhouse.pod:9000
+        CLICKHOUSE_URL: http://clickhouse.pod:8123
+        CLICKHOUSE_USER: clickhouse
+        CLICKHOUSE_PASSWORD: clickhouse
+        REDIS_HOST: redis.pod
+        REDIS_PORT: "6379"
+        REDIS_AUTH: myredissecret
+
+    - name: clickhouse
+      image: clickhouse/clickhouse-server:25.2
+      servicePorts:
+        - 8123
+        - 9000
+      vars:
+        CLICKHOUSE_DB: default
+        CLICKHOUSE_USER: clickhouse
+        CLICKHOUSE_PASSWORD: clickhouse
+      volumes:
+        - name: clickhouse-data
+          size: 10Gi
+          mountPath: /var/lib/clickhouse
+        - name: clickhouse-logs
+          size: 1Gi
+          mountPath: /var/log/clickhouse-server
+
+    - name: minio
+      image: minio/minio:RELEASE.2025-02-28T09-55-16Z
+      entrypoint: /bin/sh
+      command: -c "mkdir -p /data/langfuse && minio server --address ':9000' --console-address ':9001' /data"
+      servicePorts:
+        - 9000
+        - 9001
+      vars:
+        MINIO_ROOT_USER: minio
+        MINIO_ROOT_PASSWORD: miniosecret
+      volumes:
+        - name: minio-data
+          size: 10Gi
+          mountPath: /data
+
+    - name: redis
+      image: redis:7
+      command: redis-server --requirepass myredissecret
+      servicePorts:
+        - 6379
+      vars:
+        REDIS_AUTH: myredissecret
+
+    - name: postgres
+      image: postgres:17.4
+      servicePorts:
+        - 5432
+      vars:
+        POSTGRES_USER: postgres
+        POSTGRES_PASSWORD: postgres
+        POSTGRES_DB: postgres
+      volumes:
+        - name: postgres-data
+          size: 10Gi
+          mountPath: /var/lib/postgresql
