@@ -26,5 +26,5 @@ jobs:
 
       - name: Show Response
         run: |
-          echo "API Response:"
+          echo "Response:"
           echo '${{ steps.get-response.outputs.response }}'
