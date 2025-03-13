@@ -8,8 +8,6 @@ on:
 jobs:
   curl-nexlayer:
     runs-on: ubuntu-latest
-    permissions:
-      pull-requests: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -30,14 +28,3 @@ jobs:
         run: |
           echo "API Response:"
           echo '${{ steps.get-response.outputs.response }}'
-
-      - name: Post Results
-        uses: mad9000/actions-comment-run@v1
-        if: always()
-        with:
-          message: |
-            NexLayer Deployment Result:
-            ```
-            ${{ steps.get-response.outputs.response }}
-            ```
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
